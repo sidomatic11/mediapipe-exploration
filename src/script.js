@@ -172,8 +172,11 @@ imageInput.addEventListener("change", function () {
 	};
 	reader.readAsDataURL(file);
 });
+
 function begin() {
-	initializeFaceDetector();
+	initializeFaceDetector().then(() => {
+		document.getElementById("loading").remove();
+	});
 }
 
 begin();

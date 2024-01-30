@@ -62,3 +62,14 @@ body {
     background-color: #c300ffa6;
     z-index: 1;
 }
+
+#loading {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    height: 100%;
+    width: 100%;
+    background-color: #d8fff2;
+    text-align: center;
+    padding: 50px;
+}
