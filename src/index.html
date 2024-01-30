@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Exploring MediaPipe</title>
+		<link rel="stylesheet" href="./style.css" />
+	</head>
+	<body>
+		<h1>Face Recognition using MediaPipe</h1>
+
+		<h2>Image Detection</h2>
+		<input type="file" id="imageInput" />
+		<div class="image-container" id="image-container">
+			<img id="image1" />
+			<div class="detections" id="detections-container"></div>
+		</div>
+
+		<h2>Webcam Continuous Detection</h2>
+		<button id="webcamButton">Enable Webcam</button>
+		<div id="liveView" class="videoView">
+			<video id="webcam" autoplay playsinline></video>
+		</div>
+
+		<script type="module" src="./script.js"></script>
+	</body>
+</html>
