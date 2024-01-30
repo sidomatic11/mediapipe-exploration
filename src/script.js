@@ -1,4 +1,5 @@
 import { FilesetResolver, FaceDetector } from "@mediapipe/tasks-vision";
+import blazeModelPath from "/models/blaze_face_short_range.tflite?url";
 
 let runningMode = "IMAGE";
 let faceDetector;
@@ -12,7 +13,7 @@ async function initializeFaceDetector() {
 
 	faceDetector = await FaceDetector.createFromOptions(vision, {
 		baseOptions: {
-			modelAssetPath: "/models/blaze_face_short_range.tflite",
+			modelAssetPath: blazeModelPath,
 		},
 		runningMode: runningMode,
 	});
