@@ -37,7 +37,7 @@ body {
 
 .image-container img {
     max-height: 500px;
-    margin: 20px 0;
+    /* margin: 20px 0; */
 }
 
 .image-container .detections {
@@ -47,6 +47,17 @@ body {
     height: 100%;
     width: 100%;
 }
+
+.keypoint {
+    position: absolute;
+    z-index: 2;
+    /* top: 0px;
+    left: 0px; */
+    height: 6px;
+    width: 6px;
+    border-radius: 50%;
+    background-color: magenta;
+  }
 
 .image-container .bounding-box {
     position: absolute;
@@ -59,7 +70,7 @@ body {
 
 .videoView .bounding-box {
     position: absolute;
-    background-color: #c300ffa6;
+    background-color: #0000ffa6;
     z-index: 1;
 }
 

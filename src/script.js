@@ -22,6 +22,7 @@ async function initializeFaceDetector() {
 function detectInImage() {
 	const image = document.getElementById("image1");
 	const faceDetectorResult = faceDetector.detect(image);
+	console.log(faceDetectorResult);
 
 	// draw the bounding box for each detection:
 	let displayContainer = document.getElementById("detections-container");
@@ -34,6 +35,8 @@ function detectInImage() {
 
 function drawBoundingBoxes(detection) {
 	let boundingBox = detection.boundingBox;
+	let keypoints = detection.keypoints;
+
 	console.log(boundingBox);
 
 	let ratio = this.image.height / this.image.naturalHeight; //since the image is scaled
@@ -58,6 +61,19 @@ function drawBoundingBoxes(detection) {
 		"width: " +
 		boxWidth +
 		"px;";
+
+	keypoints.forEach((keypoint) => {
+		const keypointElement = document.createElement("div");
+		keypointElement.classList.add("keypoint");
+		keypointElement.style =
+			"left: " +
+			(keypoint.x * this.image.width - 3) +
+			"px;" +
+			"top: " +
+			(keypoint.y * this.image.height - 3) +
+			"px;";
+		this.displayContainer.appendChild(keypointElement);
+	});
 	this.displayContainer.appendChild(boundinBoxElement);
 }
 
@@ -136,6 +152,7 @@ function displayVideoDetections(detection) {
 	children.splice(0);
 
 	let boundingBox = detection.boundingBox;
+	let keypoints = detection.keypoints;
 	console.log(boundingBox);
 
 	const boundinBoxElement = document.createElement("div");
@@ -154,6 +171,19 @@ function displayVideoDetections(detection) {
 		boundingBox.width +
 		"px;";
 	liveView.appendChild(boundinBoxElement);
+	keypoints.forEach((keypoint) => {
+		const keypointElement = document.createElement("div");
+		keypointElement.classList.add("keypoint");
+		keypointElement.style =
+			"left: " +
+			(keypoint.x * this.video.clientWidth - 3) +
+			"px;" +
+			"top: " +
+			(keypoint.y * this.video.clientHeight - 3) +
+			"px;";
+		liveView.appendChild(keypointElement);
+		children.push(keypointElement);
+	});
 	children.push(boundinBoxElement);
 }
 
