@@ -6,22 +6,27 @@
 		<title>Exploring MediaPipe</title>
 		<link rel="stylesheet" href="./style.css" />
 	</head>
+
 	<body>
 		<h1>Face Recognition using MediaPipe</h1>
 
 		<div id="loading">Model is loading...</div>
 
 		<h2>Image Detection</h2>
-		<input type="file" id="imageInput" />
-		<div class="image-container" id="image-container">
-			<img id="image1" />
-			<div class="detections" id="detections-container"></div>
+		<div class="image-section">
+			<input type="file" id="imageInput" />
+			<div class="image-container" id="image-container">
+				<img id="image1" />
+				<div class="detections" id="detections-container"></div>
+			</div>
 		</div>
 
 		<h2>Webcam Continuous Detection</h2>
-		<button id="webcamButton">Enable Webcam</button>
-		<div id="liveView" class="videoView">
-			<video id="webcam" autoplay playsinline></video>
+		<div class="video-section">
+			<button id="webcamButton">Enable Webcam</button>
+			<div id="liveView" class="videoView">
+				<video id="webcam" autoplay playsinline></video>
+			</div>
 		</div>
 
 		<script type="module" src="./script.js"></script>

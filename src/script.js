@@ -1,10 +1,12 @@
+// TODO: Verify image recognition calculation. Why is it not correct?
+
 import { FilesetResolver, FaceDetector } from "@mediapipe/tasks-vision";
 import blazeModelPath from "/models/blaze_face_short_range.tflite?url";
 
 let runningMode = "IMAGE";
 let faceDetector;
 
-//-----
+/* SECTION: INITIALIZE DETECTOR */
 
 async function initializeFaceDetector() {
 	const vision = await FilesetResolver.forVisionTasks(
@@ -19,6 +21,25 @@ async function initializeFaceDetector() {
 	});
 }
 
+initializeFaceDetector().then(() => {
+	document.getElementById("loading").remove();
+});
+
+/* SECTION: IMAGE DETECTION */
+
+const imageInput = document.getElementById("imageInput");
+
+imageInput.addEventListener("change", function () {
+	const imageTag = document.getElementById("image1");
+	const file = this.files[0];
+	const reader = new FileReader();
+	reader.onload = function (e) {
+		imageTag.src = e.target.result;
+		imageTag.onload = detectInImage;
+	};
+	reader.readAsDataURL(file);
+});
+
 function detectInImage() {
 	const image = document.getElementById("image1");
 	const faceDetectorResult = faceDetector.detect(image);
@@ -27,13 +48,13 @@ function detectInImage() {
 	// draw the bounding box for each detection:
 	let displayContainer = document.getElementById("detections-container");
 	displayContainer.innerHTML = "";
-	faceDetectorResult.detections.forEach(drawBoundingBoxes, {
+	faceDetectorResult.detections.forEach(displayImageDetections, {
 		image,
 		displayContainer,
 	});
 }
 
-function drawBoundingBoxes(detection) {
+function displayImageDetections(detection) {
 	let boundingBox = detection.boundingBox;
 	let keypoints = detection.keypoints;
 
@@ -67,20 +88,25 @@ function drawBoundingBoxes(detection) {
 		keypointElement.classList.add("keypoint");
 		keypointElement.style =
 			"left: " +
-			(keypoint.x * this.image.width - 3) +
+			keypoint.x * this.image.width +
 			"px;" +
 			"top: " +
-			(keypoint.y * this.image.height - 3) +
+			keypoint.y * this.image.height +
 			"px;";
 		this.displayContainer.appendChild(keypointElement);
 	});
 	this.displayContainer.appendChild(boundinBoxElement);
 }
 
-// Check if webcam access is supported.
-const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
+/* SECTION: VIDEO DETECTION */
+
 let video = document.getElementById("webcam");
 let enableWebcamButton;
+let lastVideoTime = -1;
+let liveView = document.getElementById("liveView");
+
+// Check if webcam access is supported.
+const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
 
 if (hasGetUserMedia()) {
 	enableWebcamButton = document.getElementById("webcamButton");
@@ -90,15 +116,10 @@ if (hasGetUserMedia()) {
 }
 
 async function enableCam(event) {
-	// if (!faceDetector) {
-	// 	alert("Face Detector is still loading. Please try again..");
-	// 	return;
-	// }
-
-	// Toggle button text
+	// Hide button
 	enableWebcamButton.style.display = "none";
 
-	// getUsermedia parameters
+	// Set parameters for getUsermedia
 	const constraints = {
 		video: true,
 	};
@@ -108,31 +129,32 @@ async function enableCam(event) {
 		.getUserMedia(constraints)
 		.then(function (stream) {
 			video.srcObject = stream;
-			video.addEventListener("loadeddata", predictWebcam);
+			video.addEventListener("loadeddata", detectInWebcam);
 		})
 		.catch((err) => {
 			console.error(err);
 		});
 }
 
-let lastVideoTime = -1;
-let liveView = document.getElementById("liveView");
-async function predictWebcam() {
+async function detectInWebcam() {
 	// if image mode is initialized, create a new classifier with video runningMode
 	if (runningMode === "IMAGE") {
 		runningMode = "VIDEO";
 		await faceDetector.setOptions({ runningMode: "VIDEO" });
 	}
+
 	let startTimeMs = performance.now();
 	let displayContainer = liveView;
 
 	// Detect faces using detectForVideo
 	if (video.currentTime !== lastVideoTime) {
 		lastVideoTime = video.currentTime;
+
 		const detections = faceDetector.detectForVideo(
 			video,
 			startTimeMs
 		).detections;
+
 		detections.forEach(displayVideoDetections, {
 			video,
 			displayContainer,
@@ -140,12 +162,13 @@ async function predictWebcam() {
 	}
 
 	// Call this function again to keep predicting when the browser is ready
-	window.requestAnimationFrame(predictWebcam);
+	window.requestAnimationFrame(detectInWebcam);
 }
 
 let children = [];
 
 function displayVideoDetections(detection) {
+	//remove any previous detections
 	for (let child of children) {
 		liveView.removeChild(child);
 	}
@@ -155,6 +178,7 @@ function displayVideoDetections(detection) {
 	let keypoints = detection.keypoints;
 	console.log(boundingBox);
 
+	/* Display bounding box */
 	const boundinBoxElement = document.createElement("div");
 	boundinBoxElement.classList.add("bounding-box");
 	boundinBoxElement.style =
@@ -171,42 +195,20 @@ function displayVideoDetections(detection) {
 		boundingBox.width +
 		"px;";
 	liveView.appendChild(boundinBoxElement);
+	children.push(boundinBoxElement);
+
+	/* Display keypoints */
 	keypoints.forEach((keypoint) => {
 		const keypointElement = document.createElement("div");
 		keypointElement.classList.add("keypoint");
 		keypointElement.style =
 			"left: " +
-			(keypoint.x * this.video.clientWidth - 3) +
+			keypoint.x * this.video.clientWidth +
 			"px;" +
 			"top: " +
-			(keypoint.y * this.video.clientHeight - 3) +
+			keypoint.y * this.video.clientHeight +
 			"px;";
 		liveView.appendChild(keypointElement);
 		children.push(keypointElement);
 	});
-	children.push(boundinBoxElement);
 }
-
-// --------
-
-const imageTag = document.getElementById("image1");
-imageTag.addEventListener("click", detectInImage);
-const imageInput = document.getElementById("imageInput");
-
-imageInput.addEventListener("change", function () {
-	const file = this.files[0];
-	const reader = new FileReader();
-	reader.onload = function (e) {
-		imageTag.src = e.target.result;
-		imageTag.onload = detectInImage;
-	};
-	reader.readAsDataURL(file);
-});
-
-function begin() {
-	initializeFaceDetector().then(() => {
-		document.getElementById("loading").remove();
-	});
-}
-
-begin();

@@ -1,86 +1,139 @@
-*
-{
-    margin: 0;
-    padding: 0;
+/* SECTION: CSS Reset */
+/*
+  1. Use a more-intuitive box-sizing model.
+*/
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+/*
+    2. Remove default margin
+  */
+* {
+	margin: 0;
+}
+/*
+    Typographic tweaks!
+    3. Add accessible line-height
+    4. Improve text rendering
+  */
+body {
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+/*
+    5. Improve media defaults
+  */
+img,
+picture,
+video,
+canvas,
+svg {
+	display: block;
+	max-width: 100%;
+}
+/*
+    6. Remove built-in form typography styles
+  */
+input,
+button,
+textarea,
+select {
+	font: inherit;
 }
 
+/* SECTION: Application Styles */
+* {
+	font-family: sans-serif;
+}
 html,
-body
-{
-    overflow: auto;
+body {
+	overflow: auto;
 }
 
-.webgl
-{
-    position: fixed;
-    top: 0;
-    left: 0;
-    outline: none;
-}
-
-h1, h2 {
-    /* text-align: center; */
-    margin: 20px 0;
+h1,
+h2 {
+	margin: 20px 0;
 }
 
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+	display: flex;
+	flex-direction: column;
+	padding: 0 20px;
+	max-width: 800px;
+	margin: auto;
+}
+
+.image-section {
+	background-color: #eeeeee;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 20px;
+}
+
+#imageInput {
+	padding-bottom: 20px;
 }
 
 .image-container {
-    /* text-align: center; */
-    position: relative;
-    /* padding-top: 20px; */
+	position: relative;
+	background-color: #eeeeee;
 }
 
 .image-container img {
-    max-height: 500px;
-    /* margin: 20px 0; */
+	max-height: 500px;
+	max-width: 100%;
 }
 
 .image-container .detections {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
 }
 
 .keypoint {
-    position: absolute;
-    z-index: 2;
-    /* top: 0px;
-    left: 0px; */
-    height: 6px;
-    width: 6px;
-    border-radius: 50%;
-    background-color: magenta;
-  }
+	position: absolute;
+	z-index: 2;
+	box-shadow: 0 0 0 4px magenta;
+	border-radius: 50%;
+}
 
 .image-container .bounding-box {
-    position: absolute;
-    background-color: #0000ffa6;
+	position: absolute;
+	background-color: #0000ffa6;
+}
+
+.video-section {
+	background-color: #eeeeee;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 20px;
 }
 
 .videoView {
-    position: relative;
+	position: relative;
 }
 
 .videoView .bounding-box {
-    position: absolute;
-    background-color: #0000ffa6;
-    z-index: 1;
+	position: absolute;
+	background-color: #0000ffa6;
+	z-index: 1;
 }
 
 #loading {
-    position: fixed;
-    top: 0px;
-    left: 0px;
-    height: 100%;
-    width: 100%;
-    background-color: #d8fff2;
-    text-align: center;
-    padding: 50px;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	height: 100%;
+	width: 100%;
+	background-color: #d8fff2;
+	text-align: center;
+	padding: 50px;
 }
