@@ -176,6 +176,7 @@ function displayVideoDetections(detection) {
 
 	let boundingBox = detection.boundingBox;
 	let keypoints = detection.keypoints;
+	let ratio = this.video.clientHeight / this.video.videoHeight;
 	console.log(boundingBox);
 
 	/* Display bounding box */
@@ -183,16 +184,16 @@ function displayVideoDetections(detection) {
 	boundinBoxElement.classList.add("bounding-box");
 	boundinBoxElement.style =
 		"left: " +
-		boundingBox.originX +
+		boundingBox.originX * ratio +
 		"px;" +
 		"top: " +
-		boundingBox.originY +
+		boundingBox.originY * ratio +
 		"px;" +
 		"height: " +
-		boundingBox.height +
+		boundingBox.height * ratio +
 		"px;" +
 		"width: " +
-		boundingBox.width +
+		boundingBox.width * ratio +
 		"px;";
 	liveView.appendChild(boundinBoxElement);
 	children.push(boundinBoxElement);
