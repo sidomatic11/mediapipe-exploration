@@ -88,10 +88,15 @@ body {
 	max-width: 100%;
 }
 
-.image-container .detections {
+.detections {
 	position: absolute;
 	top: 0;
 	left: 0;
+	height: 100%;
+	width: 100%;
+}
+
+.detections .canvas {
 	height: 100%;
 	width: 100%;
 }
