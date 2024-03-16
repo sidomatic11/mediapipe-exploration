@@ -8,9 +8,42 @@
 	</head>
 
 	<body>
-		<h1>Face Landmarking using MediaPipe</h1>
+		<!-- <div class="top-bar">
+			<h4>Face Landmarking using MediaPipe</h4>
+		</div> -->
 
 		<div id="loading">Model is loading...</div>
+
+		<div class="input-bar">
+			<!-- <label class="toggle-input">
+				<input type="checkbox" id="show-avatar" />
+				Show avatar
+			</label> -->
+			<label class="toggle-input">
+				<input type="checkbox" id="collect-data" />
+				Collect data
+			</label>
+		</div>
+
+		<!-- <div>
+			<div>
+				<input type="file" id="imageInput" />
+				<button id="webcamButton">Enable Webcam</button>
+			</div>
+
+			<div class="image-container" id="image-container">
+				<img id="image1" />
+				<div class="detections" id="detections-container"></div>
+			</div>
+
+			<div id="liveView" class="videoView">
+				<video id="webcam" autoplay playsinline></video>
+				<div class="detections" id="video-detections-container">
+					<canvas class="canvas" id="video-canvas"></canvas>
+					<canvas class="canvas" id="avatar-canvas"></canvas>
+				</div>
+			</div>
+		</div> -->
 
 		<h2>Image Detection</h2>
 		<div class="image-section">
@@ -26,10 +59,14 @@
 			<button id="webcamButton">Enable Webcam</button>
 			<div id="liveView" class="videoView">
 				<video id="webcam" autoplay playsinline></video>
-				<div class="detections" id="video-detections-container"></div>
+				<div class="detections" id="video-detections-container">
+					<canvas class="canvas" id="video-canvas"></canvas>
+					<canvas class="canvas" id="avatar-canvas"></canvas>
+				</div>
 			</div>
 		</div>
 
 		<script type="module" src="./script.js"></script>
+		<script type="module" src="./avatar.js"></script>
 	</body>
 </html>

@@ -124,6 +124,12 @@ body {
 
 .videoView {
 	position: relative;
+
+	/* position: fixed;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%; */
 }
 
 .videoView .bounding-box {
@@ -141,4 +147,44 @@ body {
 	background-color: #d8fff2;
 	text-align: center;
 	padding: 50px;
+}
+
+#avatar-canvas {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 2;
+}
+
+.top-bar {
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	background-color: rgb(32, 32, 32);
+	color: #ffffff;
+	padding: 4px 20px;
+}
+
+.input-bar {
+	position: fixed;
+	bottom: 0px;
+	left: 0px;
+	/* width: 132px; */
+
+	background-color: rgb(32, 32, 32);
+	color: #ffffff;
+	display: flex;
+	/* flex-direction: column; */
+}
+
+.toggle-input {
+	padding: 8px 12px;
+	flex-grow: 1;
+	cursor: pointer;
+	user-select: none;
+}
+
+.toggle-input:hover {
+	background-color: rgb(62, 62, 62);
 }

@@ -1,30 +1,17 @@
 import {
 	FilesetResolver,
-	FaceDetector,
+	PoseLandmarker,
 	FaceLandmarker,
 	DrawingUtils,
 } from "@mediapipe/tasks-vision";
-import blazeModelPath from "/models/blaze_face_short_range.tflite?url";
 import landmarkerModelPath from "/models/face_landmarker.task?url";
+import poseLandmarkerModelPath from "/models/pose_landmarker_lite.task?url";
 
 let runningMode = "IMAGE";
-let faceDetector;
 let faceLandmarker;
+let poseLandmarker;
 
 /* SECTION: INITIALIZE DETECTOR */
-
-async function initializeFaceDetector() {
-	const vision = await FilesetResolver.forVisionTasks(
-		"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-	);
-
-	faceDetector = await FaceDetector.createFromOptions(vision, {
-		baseOptions: {
-			modelAssetPath: blazeModelPath,
-		},
-		runningMode: runningMode,
-	});
-}
 
 async function initializeFaceLandmarker() {
 	const vision = await FilesetResolver.forVisionTasks(
@@ -37,16 +24,29 @@ async function initializeFaceLandmarker() {
 			delegate: "GPU",
 		},
 		outputFaceBlendshapes: true,
+		outputFacialTransformationMatrixes: true,
 		runningMode,
 		numFaces: 1,
 	});
 }
 
-initializeFaceDetector().then(() => {
-	document.getElementById("loading").remove();
-});
+async function initializePoseLandmarker() {
+	const vision = await FilesetResolver.forVisionTasks(
+		"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+	);
+	poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+		baseOptions: {
+			modelAssetPath: poseLandmarkerModelPath,
+		},
+		runningMode: runningMode,
+	});
+}
 
-initializeFaceLandmarker();
+initializePoseLandmarker().then(() => {
+	initializeFaceLandmarker().then(() => {
+		document.getElementById("loading").remove();
+	});
+});
 
 /* SECTION: IMAGE DETECTION */
 
@@ -62,64 +62,6 @@ imageInput.addEventListener("change", function () {
 	};
 	reader.readAsDataURL(file);
 });
-
-function detectInImage() {
-	const image = document.getElementById("image1");
-	const faceDetectorResult = faceDetector.detect(image);
-	console.log(faceDetectorResult);
-
-	// draw the bounding box for each detection:
-	let displayContainer = document.getElementById("detections-container");
-	displayContainer.innerHTML = "";
-	faceDetectorResult.detections.forEach(displayImageDetections, {
-		image,
-		displayContainer,
-	});
-}
-
-function displayImageDetections(detection) {
-	let boundingBox = detection.boundingBox;
-	let keypoints = detection.keypoints;
-
-	console.log(boundingBox);
-
-	let ratio = this.image.height / this.image.naturalHeight; //since the image is scaled
-
-	let boxLeft = boundingBox.originX * ratio;
-	let boxTop = boundingBox.originY * ratio;
-	let boxHeight = boundingBox.height * ratio;
-	let boxWidth = boundingBox.width * ratio;
-
-	const boundinBoxElement = document.createElement("div");
-	boundinBoxElement.classList.add("bounding-box");
-	boundinBoxElement.style =
-		"left: " +
-		boxLeft +
-		"px;" +
-		"top: " +
-		boxTop +
-		"px;" +
-		"height: " +
-		boxHeight +
-		"px;" +
-		"width: " +
-		boxWidth +
-		"px;";
-
-	keypoints.forEach((keypoint) => {
-		const keypointElement = document.createElement("div");
-		keypointElement.classList.add("keypoint");
-		keypointElement.style =
-			"left: " +
-			keypoint.x * this.image.width +
-			"px;" +
-			"top: " +
-			keypoint.y * this.image.height +
-			"px;";
-		this.displayContainer.appendChild(keypointElement);
-	});
-	this.displayContainer.appendChild(boundinBoxElement);
-}
 
 function detectLandmarksInImage() {
 	const image = document.getElementById("image1");
@@ -194,6 +136,7 @@ let video = document.getElementById("webcam");
 let enableWebcamButton;
 let lastVideoTime = -1;
 let liveView = document.getElementById("liveView");
+let detectionData = {};
 
 // Check if webcam access is supported.
 const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
@@ -206,109 +149,12 @@ if (hasGetUserMedia()) {
 	console.warn("getUserMedia() is not supported by your browser");
 }
 
-async function enableCam(event) {
-	// Hide button
-	enableWebcamButton.style.display = "none";
-
-	// Set parameters for getUsermedia
-	const constraints = {
-		video: true,
-	};
-
-	// Activate the webcam stream.
-	navigator.mediaDevices
-		.getUserMedia(constraints)
-		.then(function (stream) {
-			video.srcObject = stream;
-			video.addEventListener("loadeddata", detectInWebcam);
-		})
-		.catch((err) => {
-			console.error(err);
-		});
-}
-
-async function detectInWebcam() {
-	// if image mode is initialized, create a new classifier with video runningMode
-	if (runningMode === "IMAGE") {
-		runningMode = "VIDEO";
-		await faceDetector.setOptions({ runningMode: "VIDEO" });
-	}
-
-	let startTimeMs = performance.now();
-	let displayContainer = liveView;
-
-	// Detect faces using detectForVideo
-	if (video.currentTime !== lastVideoTime) {
-		lastVideoTime = video.currentTime;
-
-		const detections = faceDetector.detectForVideo(
-			video,
-			startTimeMs
-		).detections;
-
-		detections.forEach(displayVideoDetections, {
-			video,
-			displayContainer,
-		});
-	}
-
-	// Call this function again to keep predicting when the browser is ready
-	window.requestAnimationFrame(detectInWebcam);
-}
-
-let children = [];
-
-function displayVideoDetections(detection) {
-	//remove any previous detections
-	for (let child of children) {
-		liveView.removeChild(child);
-	}
-	children.splice(0);
-
-	let boundingBox = detection.boundingBox;
-	let keypoints = detection.keypoints;
-	let ratio = this.video.clientHeight / this.video.videoHeight;
-	console.log(boundingBox);
-
-	/* Display bounding box */
-	const boundinBoxElement = document.createElement("div");
-	boundinBoxElement.classList.add("bounding-box");
-	boundinBoxElement.style =
-		"left: " +
-		boundingBox.originX * ratio +
-		"px;" +
-		"top: " +
-		boundingBox.originY * ratio +
-		"px;" +
-		"height: " +
-		boundingBox.height * ratio +
-		"px;" +
-		"width: " +
-		boundingBox.width * ratio +
-		"px;";
-	liveView.appendChild(boundinBoxElement);
-	children.push(boundinBoxElement);
-
-	/* Display keypoints */
-	keypoints.forEach((keypoint) => {
-		const keypointElement = document.createElement("div");
-		keypointElement.classList.add("keypoint");
-		keypointElement.style =
-			"left: " +
-			keypoint.x * this.video.clientWidth +
-			"px;" +
-			"top: " +
-			keypoint.y * this.video.clientHeight +
-			"px;";
-		liveView.appendChild(keypointElement);
-		children.push(keypointElement);
-	});
-}
-
 let displayContainer = document.getElementById("video-detections-container");
-const canvas = document.createElement("canvas");
-canvas.setAttribute("class", "canvas");
-displayContainer.appendChild(canvas);
+const canvas = document.querySelector("#video-canvas");
+// const canvas = document.createElement("canvas");
+// canvas.setAttribute("class", "canvas");
+// canvas.setAttribute("id", "video-canvas");
+// displayContainer.appendChild(canvas);
 
 async function enableCamForLandmarker(event) {
 	// Hide button
@@ -336,6 +182,7 @@ async function detectLandmarksInWebcam() {
 	if (runningMode === "IMAGE") {
 		runningMode = "VIDEO";
 		await faceLandmarker.setOptions({ runningMode: "VIDEO" });
+		await poseLandmarker.setOptions({ runningMode: "VIDEO" });
 		/* Canvas size = Actual image size, to match resolution */
 		canvas.setAttribute("width", video.videoWidth + "px");
 		canvas.setAttribute("height", video.videoHeight + "px");
@@ -350,13 +197,19 @@ async function detectLandmarksInWebcam() {
 		lastVideoTime = video.currentTime;
 
 		const detections = faceLandmarker.detectForVideo(video, startTimeMs);
+		// const poseDetections = poseLandmarker.detectForVideo(video, startTimeMs);
+		const poseDetections = {};
+
+		if (document.getElementById("collect-data").checked) {
+			detectionData[Date.now()] = detections;
+		}
+
+		/* Draw on canvas using DrawingUtils */
+		const ctx = canvas.getContext("2d");
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); //clear canvas before redrawing
+		const drawingUtils = new DrawingUtils(ctx);
 
 		if (detections.faceLandmarks) {
-			/* Draw on canvas using DrawingUtils */
-			const ctx = canvas.getContext("2d");
-			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); //clear canvas before redrawing
-			const drawingUtils = new DrawingUtils(ctx);
-
 			for (const landmarks of detections.faceLandmarks) {
 				drawingUtils.drawConnectors(
 					landmarks,
@@ -407,8 +260,28 @@ async function detectLandmarksInWebcam() {
 				);
 			}
 		}
+
+		if (poseDetections.landmarks) {
+			for (const landmark of poseDetections.landmarks) {
+				drawingUtils.drawLandmarks(landmark, {
+					radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1),
+				});
+				drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
+			}
+		}
 	}
 
 	// Call this function again to keep predicting when the browser is ready
 	window.requestAnimationFrame(detectLandmarksInWebcam);
 }
+
+function sendData() {
+	if (document.getElementById("collect-data").checked) {
+		console.log("Detection Data: ");
+		console.log(detectionData);
+		detectionData = {};
+	}
+	setTimeout(sendData, 5000);
+}
+
+sendData();
