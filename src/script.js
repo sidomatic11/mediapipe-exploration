@@ -52,16 +52,18 @@ initializePoseLandmarker().then(() => {
 
 const imageInput = document.getElementById("imageInput");
 
-imageInput.addEventListener("change", function () {
-	const imageTag = document.getElementById("image1");
-	const file = this.files[0];
-	const reader = new FileReader();
-	reader.onload = function (e) {
-		imageTag.src = e.target.result;
-		imageTag.onload = detectLandmarksInImage;
-	};
-	reader.readAsDataURL(file);
-});
+if (imageInput) {
+	imageInput.addEventListener("change", function () {
+		const imageTag = document.getElementById("image1");
+		const file = this.files[0];
+		const reader = new FileReader();
+		reader.onload = function (e) {
+			imageTag.src = e.target.result;
+			imageTag.onload = detectLandmarksInImage;
+		};
+		reader.readAsDataURL(file);
+	});
+}
 
 function detectLandmarksInImage() {
 	const image = document.getElementById("image1");
@@ -186,6 +188,25 @@ async function detectLandmarksInWebcam() {
 		/* Canvas size = Actual image size, to match resolution */
 		canvas.setAttribute("width", video.videoWidth + "px");
 		canvas.setAttribute("height", video.videoHeight + "px");
+
+		/* make video full screen */
+		let windowAspectRatio = window.innerWidth / window.innerHeight;
+		let videoAspectRatio = video.videoWidth / video.videoHeight;
+		let videoHeight = 0;
+		let videoWidth = 0;
+
+		if (windowAspectRatio >= videoAspectRatio) {
+			//window width mothi
+			videoHeight = window.innerHeight;
+			videoWidth = window.innerHeight * videoAspectRatio;
+		} else {
+			//window height mothi
+			videoWidth = window.innerWidth;
+			videoHeight = window.innerWidth / videoAspectRatio;
+		}
+		liveView.style.height = videoHeight + "px";
+		liveView.style.width = videoWidth + "px";
+		liveView.style.display = "block";
 	}
 
 	let startTimeMs = performance.now();
