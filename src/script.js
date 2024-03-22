@@ -6,6 +6,7 @@ import {
 } from "@mediapipe/tasks-vision";
 import landmarkerModelPath from "/models/face_landmarker.task?url";
 import poseLandmarkerModelPath from "/models/pose_landmarker_lite.task?url";
+import { updatePosition } from "./avatar.js";
 
 let runningMode = "IMAGE";
 let faceLandmarker;
@@ -231,6 +232,12 @@ async function detectLandmarksInWebcam() {
 		const drawingUtils = new DrawingUtils(ctx);
 
 		if (detections.faceLandmarks) {
+			/* Update avatar */
+			if (document.getElementById("show-avatar").checked) {
+				updatePosition(detections.faceLandmarks);
+			}
+
+			/* Render detection */
 			for (const landmarks of detections.faceLandmarks) {
 				drawingUtils.drawConnectors(
 					landmarks,
