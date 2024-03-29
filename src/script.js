@@ -152,12 +152,8 @@ if (hasGetUserMedia()) {
 	console.warn("getUserMedia() is not supported by your browser");
 }
 
-let displayContainer = document.getElementById("video-detections-container");
-const canvas = document.querySelector("#video-canvas");
-// const canvas = document.createElement("canvas");
-// canvas.setAttribute("class", "canvas");
-// canvas.setAttribute("id", "video-canvas");
-// displayContainer.appendChild(canvas);
+// let displayContainer = document.getElementById("video-detections-container");
+const landmarksCanvas = document.querySelector("#landmarks-canvas");
 
 async function enableCamForLandmarker(event) {
 	// Hide button
@@ -180,41 +176,43 @@ async function enableCamForLandmarker(event) {
 		});
 }
 
+function makeVideoFullScreen() {
+	/* make video full screen */
+	let windowAspectRatio = window.innerWidth / window.innerHeight;
+	let videoAspectRatio = video.videoWidth / video.videoHeight;
+	let videoHeight = 0;
+	let videoWidth = 0;
+
+	if (windowAspectRatio >= videoAspectRatio) {
+		//when window width is greater
+		videoHeight = window.innerHeight;
+		videoWidth = window.innerHeight * videoAspectRatio;
+	} else {
+		//when window height is greater
+		videoWidth = window.innerWidth;
+		videoHeight = window.innerWidth / videoAspectRatio;
+	}
+	liveView.style.height = videoHeight + "px";
+	liveView.style.width = videoWidth + "px";
+	liveView.style.display = "block";
+}
+
 async function detectLandmarksInWebcam() {
 	// if image mode is initialized, create a new classifier with video runningMode
 	if (runningMode === "IMAGE") {
 		runningMode = "VIDEO";
 		await faceLandmarker.setOptions({ runningMode: "VIDEO" });
 		await poseLandmarker.setOptions({ runningMode: "VIDEO" });
+
 		/* Canvas size = Actual image size, to match resolution */
-		canvas.setAttribute("width", video.videoWidth + "px");
-		canvas.setAttribute("height", video.videoHeight + "px");
+		landmarksCanvas.setAttribute("width", video.videoWidth + "px");
+		landmarksCanvas.setAttribute("height", video.videoHeight + "px");
 
-		/* make video full screen */
-		let windowAspectRatio = window.innerWidth / window.innerHeight;
-		let videoAspectRatio = video.videoWidth / video.videoHeight;
-		let videoHeight = 0;
-		let videoWidth = 0;
-
-		if (windowAspectRatio >= videoAspectRatio) {
-			//window width mothi
-			videoHeight = window.innerHeight;
-			videoWidth = window.innerHeight * videoAspectRatio;
-		} else {
-			//window height mothi
-			videoWidth = window.innerWidth;
-			videoHeight = window.innerWidth / videoAspectRatio;
-		}
-		liveView.style.height = videoHeight + "px";
-		liveView.style.width = videoWidth + "px";
-		liveView.style.display = "block";
+		makeVideoFullScreen();
 	}
 
 	let startTimeMs = performance.now();
 
-	// displayContainer.appendChild(canvas);
-
-	// Detect faces using detectForVideo
 	if (video.currentTime !== lastVideoTime) {
 		lastVideoTime = video.currentTime;
 
@@ -222,85 +220,93 @@ async function detectLandmarksInWebcam() {
 		// const poseDetections = poseLandmarker.detectForVideo(video, startTimeMs);
 		const poseDetections = {};
 
+		// Save data for collection
 		if (document.getElementById("collect-data").checked) {
 			detectionData[Date.now()] = detections;
 		}
 
-		/* Draw on canvas using DrawingUtils */
-		const ctx = canvas.getContext("2d");
+		const ctx = landmarksCanvas.getContext("2d");
 		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); //clear canvas before redrawing
-		const drawingUtils = new DrawingUtils(ctx);
 
 		if (detections.faceLandmarks) {
 			/* Update avatar */
 			if (document.getElementById("show-avatar").checked) {
 				updatePosition(detections.faceLandmarks);
 			}
-
 			/* Render detection */
-			for (const landmarks of detections.faceLandmarks) {
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-					{ color: "#C0C0C070", lineWidth: 1 }
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-					{ color: "#FF3030" }
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-					{ color: "#FF3030" }
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-					{ color: "#30FF30" }
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-					{ color: "#30FF30" }
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-					{ color: "#E0E0E0" }
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_LIPS,
-					{
-						color: "#E0E0E0",
-					}
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-					{ color: "#FF3030" }
-				);
-				drawingUtils.drawConnectors(
-					landmarks,
-					FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-					{ color: "#30FF30" }
-				);
-			}
+			drawFaceLandmarksOnCanvas(detections.faceLandmarks, ctx);
 		}
 
 		if (poseDetections.landmarks) {
-			for (const landmark of poseDetections.landmarks) {
-				drawingUtils.drawLandmarks(landmark, {
-					radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1),
-				});
-				drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
-			}
+			drawPoseDetectionsOnCanvas(poseDetections, ctx);
 		}
 	}
 
 	// Call this function again to keep predicting when the browser is ready
 	window.requestAnimationFrame(detectLandmarksInWebcam);
+}
+
+function drawFaceLandmarksOnCanvas(faceLandmarks, canvasContext) {
+	/* Draw on canvas using DrawingUtils */
+	const drawingUtils = new DrawingUtils(canvasContext);
+
+	for (const landmarks of faceLandmarks) {
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+			{ color: "#C0C0C070", lineWidth: 1 }
+		);
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+			{ color: "#FF3030" }
+		);
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+			{ color: "#FF3030" }
+		);
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+			{ color: "#30FF30" }
+		);
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+			{ color: "#30FF30" }
+		);
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+			{ color: "#E0E0E0" }
+		);
+		drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, {
+			color: "#E0E0E0",
+		});
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
+			{ color: "#FF3030" }
+		);
+		drawingUtils.drawConnectors(
+			landmarks,
+			FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
+			{ color: "#30FF30" }
+		);
+	}
+}
+
+function drawPoseDetectionsOnCanvas(poseDetections, canvasContext) {
+	/* Draw on canvas using DrawingUtils */
+	const drawingUtils = new DrawingUtils(canvasContext);
+
+	for (const landmark of poseDetections.landmarks) {
+		drawingUtils.drawLandmarks(landmark, {
+			radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1),
+		});
+		drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
+	}
 }
 
 function sendData() {

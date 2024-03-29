@@ -1,5 +1,3 @@
-//TODO - remap coordinates to threejs canvas
-
 import * as THREE from "three";
 
 /* SECTION: Performance Monitoring */
@@ -44,15 +42,14 @@ window.addEventListener("resize", () => {
 	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); //repeated here to account for monitor change
 });
 
+/* Resize based on webcam video size */
 const resizeObserver = new ResizeObserver((event) => {
 	canvasSize.width = canvas.width = event[0].target.clientWidth;
 	canvasSize.height = canvas.height = event[0].target.clientHeight;
 	camera.aspect = canvasSize.width / canvasSize.height;
 	renderer.setSize(canvasSize.width, canvasSize.height);
 	camera.updateProjectionMatrix();
-	console.log("resize zala");
 });
-
 resizeObserver.observe(document.getElementById("liveView"));
 
 /* SECTION: Scene Objects */
@@ -67,6 +64,7 @@ const plane = new THREE.Mesh(geometry, material);
 const circleGeometry = new THREE.CircleGeometry(1, 12);
 const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 const pupilMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
 const eyeLeft = new THREE.Mesh(circleGeometry, circleMaterial);
 const pupilLeft = new THREE.Mesh(circleGeometry, pupilMaterial);
 eyeLeft.scale.x = 0.5;
@@ -77,6 +75,7 @@ pupilLeft.position.y = -0.5;
 pupilLeft.position.z = 0.1;
 eyeLeft.add(pupilLeft);
 scene.add(eyeLeft);
+
 const eyeRight = new THREE.Mesh(circleGeometry, circleMaterial);
 const pupilRight = new THREE.Mesh(circleGeometry, pupilMaterial);
 eyeRight.scale.x = 0.5;
@@ -88,14 +87,9 @@ pupilRight.position.z = 0.1;
 eyeRight.add(pupilRight);
 scene.add(eyeRight);
 
-/* SECTION: Animate */
+/* SECTION: Utility Functions */
 
-function animate() {
-	renderer.render(scene, camera);
-	// requestAnimationFrame(animate);
-}
-
-const visibleHeightAtZDepth = (depth, camera) => {
+const getVisibleHeightAtZDepth = (depth, camera) => {
 	// compensate for cameras not positioned at z=0
 	const cameraOffset = camera.position.z;
 	if (depth < cameraOffset) depth -= cameraOffset;
@@ -108,37 +102,34 @@ const visibleHeightAtZDepth = (depth, camera) => {
 	return 2 * Math.tan(vFOV / 2) * Math.abs(depth);
 };
 
-const visibleWidthAtZDepth = (depth, camera) => {
-	const height = visibleHeightAtZDepth(depth, camera);
+const getVisibleWidthAtZDepth = (depth, camera) => {
+	const height = getVisibleHeightAtZDepth(depth, camera);
 	return height * camera.aspect;
 };
 
-// animate();
+/* SECTION: Animate */
+
+function animate() {
+	renderer.render(scene, camera);
+	// requestAnimationFrame(animate);
+}
 
 export function updatePosition(landmarks) {
-	console.log("exported function called.");
-	let visibleHeight = visibleHeightAtZDepth(0, camera);
-	let visibleWidth = visibleWidthAtZDepth(0, camera);
-	// plane.scale.y = visibleHeight - 1;
-	// plane.scale.x = visibleWidth - 1;
+	let visibleHeight = getVisibleHeightAtZDepth(0, camera);
+	let visibleWidth = getVisibleWidthAtZDepth(0, camera);
+
 	if (landmarks[0]) {
 		let leftEyePosition = landmarks[0][468];
 		let rightEyePosition = landmarks[0][473];
-		// console.log("left eye");
-		// console.log(leftEye);
-		// console.log("right eye");
-		// console.log(rightEye);
+
 		eyeLeft.position.x = leftEyePosition.x * visibleWidth - visibleWidth / 2;
 		eyeLeft.position.y = -leftEyePosition.y * visibleHeight + visibleHeight / 2;
+		console.log(eyeLeft.position.z);
 
 		eyeRight.position.x = rightEyePosition.x * visibleWidth - visibleWidth / 2;
 		eyeRight.position.y =
 			-rightEyePosition.y * visibleHeight + visibleHeight / 2;
-		// let zero = landmarks[0][0];
-		// plane.position.x = zero.x * 5 - 2.5;
-		// plane.position.y = -zero.y * 5 + 2.5;
+
 		animate();
-		//TODO - window/canvas dimensions, how do they map to coordinates?
-		//TODO - maybe a plane with dimensions of canvas?
 	}
 }

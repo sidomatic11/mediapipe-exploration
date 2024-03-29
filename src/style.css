@@ -159,6 +159,7 @@ body {
 	background-color: #d8fff2;
 	text-align: center;
 	padding: 50px;
+	z-index: 4;
 }
 
 #avatar-canvas {
