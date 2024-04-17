@@ -215,13 +215,25 @@ export function updatePosition(landmarks) {
 	}
 }
 
-function sendData() {
-	if (document.getElementById("collect-data").checked) {
+const checkbox = document.getElementById("collect-data");
+
+checkbox.addEventListener("change", (event) => {
+	if (event.target.checked) {
+		console.log("Capturing data...");
+	} else {
 		console.log("Angle Data: ");
 		console.log(dataCapture);
 		dataCapture = {};
 	}
-	setTimeout(sendData, 5000);
-}
+});
 
-sendData();
+// function sendData() {
+// 	if (document.getElementById("collect-data").checked) {
+// 		console.log("Angle Data: ");
+// 		console.log(dataCapture);
+// 		dataCapture = {};
+// 	}
+// 	setTimeout(sendData, 5000);
+// }
+
+// sendData();
