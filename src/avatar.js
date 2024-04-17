@@ -24,6 +24,11 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.z = 10;
 
 /* Lighting */
+const light = new THREE.AmbientLight(0x404040); // soft white light
+scene.add(light);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+directionalLight.position.z = 10;
+scene.add(directionalLight);
 
 /* Renderer */
 const renderer = new THREE.WebGLRenderer({
@@ -53,12 +58,13 @@ const resizeObserver = new ResizeObserver((event) => {
 resizeObserver.observe(document.getElementById("liveView"));
 
 /* SECTION: Scene Objects */
-const geometry = new THREE.PlaneGeometry(1, 1);
-const material = new THREE.MeshBasicMaterial({
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+const material = new THREE.MeshPhongMaterial({
 	color: 0xff0000,
-	side: THREE.DoubleSide,
 });
-const plane = new THREE.Mesh(geometry, material);
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+// const plane = new THREE.Mesh(geometry, material);
 // scene.add(plane);
 
 const circleGeometry = new THREE.CircleGeometry(1, 12);
@@ -74,7 +80,7 @@ pupilLeft.scale.y = 0.3;
 pupilLeft.position.y = -0.5;
 pupilLeft.position.z = 0.1;
 eyeLeft.add(pupilLeft);
-scene.add(eyeLeft);
+// scene.add(eyeLeft);
 
 const eyeRight = new THREE.Mesh(circleGeometry, circleMaterial);
 const pupilRight = new THREE.Mesh(circleGeometry, pupilMaterial);
@@ -85,7 +91,24 @@ pupilRight.scale.y = 0.3;
 pupilRight.position.y = -0.5;
 pupilRight.position.z = 0.1;
 eyeRight.add(pupilRight);
-scene.add(eyeRight);
+// scene.add(eyeRight);
+
+// Define the two points
+const pointA = new THREE.Vector3(0, 0, 0);
+const pointB = new THREE.Vector3(0, 0, 0);
+
+// // Create a LineBasicMaterial (or LineDashedMaterial for dashed lines)
+// const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
+
+// // Create a BufferGeometry and populate it with the points
+// const lineGeometry = new THREE.BufferGeometry();
+// lineGeometry.setFromPoints([pointA, pointB]);
+
+// // Create a Line object from the geometry and material
+// const line = new THREE.Line(lineGeometry, lineMaterial);
+
+// // Add the line to the scene
+// scene.add(line);
 
 /* SECTION: Utility Functions */
 
@@ -114,6 +137,8 @@ function animate() {
 	// requestAnimationFrame(animate);
 }
 
+let dataCapture = {};
+
 export function updatePosition(landmarks) {
 	let visibleHeight = getVisibleHeightAtZDepth(0, camera);
 	let visibleWidth = getVisibleWidthAtZDepth(0, camera);
@@ -122,14 +147,81 @@ export function updatePosition(landmarks) {
 		let leftEyePosition = landmarks[0][468];
 		let rightEyePosition = landmarks[0][473];
 
+		let newPointA = landmarks[0][10];
+		let newPointB = landmarks[0][152];
+
+		let centerPoint = landmarks[0][5];
+		let lengthY = 0;
+
 		eyeLeft.position.x = leftEyePosition.x * visibleWidth - visibleWidth / 2;
 		eyeLeft.position.y = -leftEyePosition.y * visibleHeight + visibleHeight / 2;
-		console.log(eyeLeft.position.z);
+		// console.log(leftEyePosition.z);
 
 		eyeRight.position.x = rightEyePosition.x * visibleWidth - visibleWidth / 2;
 		eyeRight.position.y =
 			-rightEyePosition.y * visibleHeight + visibleHeight / 2;
 
+		pointA.set(
+			newPointA.x * visibleWidth - visibleWidth / 2,
+			-newPointA.y * visibleHeight + visibleHeight / 2,
+			0
+		);
+		pointB.set(
+			newPointB.x * visibleWidth - visibleWidth / 2,
+			-newPointB.y * visibleHeight + visibleHeight / 2,
+			0
+		);
+
+		let pointC = new THREE.Vector3(pointA.y, pointB.x, 0);
+
+		let lineLength = pointA.distanceTo(pointB);
+		let oppositeSide = pointA.distanceTo(pointC);
+		let rotationAngle = Math.asin(oppositeSide / lineLength);
+		// console.log(rotationAngle);
+		cube.rotation.z = rotationAngle;
+
+		if (document.getElementById("collect-data").checked) {
+			dataCapture[Date.now()] = {
+				pointA: {
+					x: pointA.x,
+					y: pointA.y,
+				},
+				pointB: {
+					x: pointB.x,
+					y: pointB.y,
+				},
+				calculatedPointC: {
+					x: pointC.x,
+					y: pointC.y,
+				},
+				angleInRadians: rotationAngle,
+			};
+		}
+
+		lengthY = Math.abs(
+			-newPointA.y * visibleHeight +
+				visibleHeight / 2 -
+				(-newPointB.y * visibleHeight + visibleHeight / 2)
+		);
+		cube.scale.y = lineLength;
+		cube.position.x = centerPoint.x * visibleWidth - visibleWidth / 2;
+		cube.position.y = -centerPoint.y * visibleHeight + visibleHeight / 2;
+
+		//TODO - Can you render a rectangle block in place of the face?
+
+		// line.geometry.setFromPoints([pointA, pointB]);
+		// line.geometry.attributes.position.needsUpdate = true;
 		animate();
 	}
 }
+
+function sendData() {
+	if (document.getElementById("collect-data").checked) {
+		console.log("Angle Data: ");
+		console.log(dataCapture);
+		dataCapture = {};
+	}
+	setTimeout(sendData, 5000);
+}
+
+sendData();
