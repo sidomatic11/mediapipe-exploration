@@ -153,6 +153,20 @@ export function updatePosition(landmarks) {
 		let centerPoint = landmarks[0][5];
 		let lengthY = 0;
 
+		let leftTragion = new THREE.Vector3(
+			landmarks[0][127].x * visibleWidth - visibleWidth / 2,
+			-landmarks[0][127].y * visibleHeight + visibleHeight / 2,
+			0
+		);
+
+		let rightTragion = new THREE.Vector3(
+			landmarks[0][356].x * visibleWidth - visibleWidth / 2,
+			-landmarks[0][356].y * visibleHeight + visibleHeight / 2,
+			0
+		);
+
+		let horizontalLength = leftTragion.distanceTo(rightTragion);
+
 		eyeLeft.position.x = leftEyePosition.x * visibleWidth - visibleWidth / 2;
 		eyeLeft.position.y = -leftEyePosition.y * visibleHeight + visibleHeight / 2;
 		// console.log(leftEyePosition.z);
@@ -179,8 +193,8 @@ export function updatePosition(landmarks) {
 		let rotationAngle = Math.asin(oppositeSide / lineLength);
 
 		// setTimeout(() => {
-		console.log("Rotation Angle:", rotationAngle);
-		console.log("Point C X:", pointC.x, "Point C Y:", pointC.y);
+		// console.log("Rotation Angle:", rotationAngle);
+		// console.log("Point C X:", pointC.x, "Point C Y:", pointC.y);
 		// }, 1000);
 		if (pointA.x > pointB.x) {
 			cube.rotation.z = -rotationAngle;
@@ -212,6 +226,7 @@ export function updatePosition(landmarks) {
 				(-newPointB.y * visibleHeight + visibleHeight / 2)
 		);
 		cube.scale.y = lineLength;
+		cube.scale.x = horizontalLength;
 		cube.position.x = centerPoint.x * visibleWidth - visibleWidth / 2;
 		cube.position.y = -centerPoint.y * visibleHeight + visibleHeight / 2;
 
