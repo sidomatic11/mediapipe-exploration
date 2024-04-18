@@ -172,13 +172,21 @@ export function updatePosition(landmarks) {
 			0
 		);
 
-		let pointC = new THREE.Vector3(pointA.y, pointB.x, 0);
+		let pointC = new THREE.Vector3(pointB.x, pointA.y, 0);
 
 		let lineLength = pointA.distanceTo(pointB);
 		let oppositeSide = pointA.distanceTo(pointC);
 		let rotationAngle = Math.asin(oppositeSide / lineLength);
-		// console.log(rotationAngle);
-		cube.rotation.z = rotationAngle;
+
+		// setTimeout(() => {
+		console.log("Rotation Angle:", rotationAngle);
+		console.log("Point C X:", pointC.x, "Point C Y:", pointC.y);
+		// }, 1000);
+		if (pointA.x > pointB.x) {
+			cube.rotation.z = -rotationAngle;
+		} else {
+			cube.rotation.z = rotationAngle;
+		}
 
 		if (document.getElementById("collect-data").checked) {
 			dataCapture[Date.now()] = {
@@ -207,12 +215,16 @@ export function updatePosition(landmarks) {
 		cube.position.x = centerPoint.x * visibleWidth - visibleWidth / 2;
 		cube.position.y = -centerPoint.y * visibleHeight + visibleHeight / 2;
 
-		//TODO - Can you render a rectangle block in place of the face?
-
 		// line.geometry.setFromPoints([pointA, pointB]);
 		// line.geometry.attributes.position.needsUpdate = true;
 		animate();
 	}
+}
+
+function logCoordinates(pointC, rotationAngle) {
+	console.log("Rotation Angle:", rotationAngle);
+	console.log("Point C X:", pointC.x, "Point C Y:", pointC.y);
+	setTimeout(logCoordinates, 1000);
 }
 
 const checkbox = document.getElementById("collect-data");
