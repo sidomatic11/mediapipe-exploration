@@ -318,4 +318,4 @@ function sendData() {
 	setTimeout(sendData, 5000);
 }
 
-// sendData();
+sendData();

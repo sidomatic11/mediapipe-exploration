@@ -137,7 +137,6 @@ function animate() {
 	// requestAnimationFrame(animate);
 }
 
-let dataCapture = {};
 
 export function updatePosition(landmarks) {
 	let visibleHeight = getVisibleHeightAtZDepth(0, camera);
@@ -202,23 +201,6 @@ export function updatePosition(landmarks) {
 			cube.rotation.z = rotationAngle;
 		}
 
-		if (document.getElementById("collect-data").checked) {
-			dataCapture[Date.now()] = {
-				pointA: {
-					x: pointA.x,
-					y: pointA.y,
-				},
-				pointB: {
-					x: pointB.x,
-					y: pointB.y,
-				},
-				calculatedPointC: {
-					x: pointC.x,
-					y: pointC.y,
-				},
-				angleInRadians: rotationAngle,
-			};
-		}
 
 		lengthY = Math.abs(
 			-newPointA.y * visibleHeight +
@@ -242,17 +224,6 @@ function logCoordinates(pointC, rotationAngle) {
 	setTimeout(logCoordinates, 1000);
 }
 
-const checkbox = document.getElementById("collect-data");
-
-checkbox.addEventListener("change", (event) => {
-	if (event.target.checked) {
-		console.log("Capturing data...");
-	} else {
-		console.log("Angle Data: ");
-		console.log(dataCapture);
-		dataCapture = {};
-	}
-});
 
 // function sendData() {
 // 	if (document.getElementById("collect-data").checked) {
