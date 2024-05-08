@@ -9,7 +9,7 @@ import poseLandmarkerModelPath from "/models/pose_landmarker_lite.task?url";
 import { updatePosition } from "./avatar.js";
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set } from "firebase/database";
+import { getDatabase, ref, set, update } from "firebase/database";
 
 let runningMode = "IMAGE";
 let faceLandmarker;
@@ -332,8 +332,8 @@ const app = initializeApp(firebaseConfig);
 function writeData(data) {
 	console.log("Sending to Firebase!");
 	const db = getDatabase(app);
-	const reference = ref(db, "data/");
-	set(reference, data);
+	const reference = ref(db);
+	update(reference, data);
 }
 
 // Send data to Firebase every 5 seconds
