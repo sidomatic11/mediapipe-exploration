@@ -8,6 +8,9 @@ import landmarkerModelPath from "/models/face_landmarker.task?url";
 import poseLandmarkerModelPath from "/models/pose_landmarker_lite.task?url";
 import { updatePosition } from "./avatar.js";
 
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set } from "firebase/database";
+
 let runningMode = "IMAGE";
 let faceLandmarker;
 let poseLandmarker;
@@ -309,10 +312,36 @@ function drawPoseDetectionsOnCanvas(poseDetections, canvasContext) {
 	}
 }
 
+//!SECTION - Firebase Setup
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+	apiKey: "AIzaSyB1Q5GBROyPANkwPEJhW_e5xbjqEK00OTE",
+	authDomain: "project-avatar-c5ff1.firebaseapp.com",
+	databaseURL: "https://project-avatar-c5ff1-default-rtdb.firebaseio.com",
+	projectId: "project-avatar-c5ff1",
+	storageBucket: "project-avatar-c5ff1.appspot.com",
+	messagingSenderId: "619120449553",
+	appId: "1:619120449553:web:c525b308e7f2c18d77b9b0",
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Write data to Firebase
+function writeData(data) {
+	console.log("Sending to Firebase!");
+	const db = getDatabase(app);
+	const reference = ref(db, "data/");
+	set(reference, data);
+}
+
+// Send data to Firebase every 5 seconds
 function sendData() {
 	if (document.getElementById("collect-data").checked) {
 		console.log("Detection Data: ");
 		console.log(detectionData);
+		writeData(detectionData);
 		detectionData = {};
 	}
 	setTimeout(sendData, 5000);
