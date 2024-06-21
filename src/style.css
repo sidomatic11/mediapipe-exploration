@@ -97,6 +97,9 @@ body {
 }
 
 .detections .canvas {
+	position: absolute;
+	top: 0;
+	left: 0;
 	height: 100%;
 	width: 100%;
 }
@@ -162,11 +165,16 @@ body {
 	z-index: 4;
 }
 
+#landmarks-canvas {
+	z-index: 1; /* Lowest, as it is base layer */
+}
+
+#hand-landmarks-canvas {
+	z-index: 2; /* Higher, to be visible over the landmarks */
+}
+
 #avatar-canvas {
-	position: absolute;
-	top: 0;
-	left: 0;
-	z-index: 2;
+	z-index: 3; /* Highest, to be visible over all */
 }
 
 .top-bar {

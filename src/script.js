@@ -2,11 +2,15 @@ import {
 	FilesetResolver,
 	PoseLandmarker,
 	FaceLandmarker,
+	HandLandmarker,
 	DrawingUtils,
 } from "@mediapipe/tasks-vision";
 import landmarkerModelPath from "/models/face_landmarker.task?url";
 import poseLandmarkerModelPath from "/models/pose_landmarker_lite.task?url";
+import handLandmarkerModelPath from "/models/hand_landmarker.task?url";
+// import wasm from "@mediapipe/tasks-vision/wasm";
 import { updatePosition } from "./avatar.js";
+import Stats from "stats.js";
 
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, update } from "firebase/database";
@@ -14,6 +18,12 @@ import { getDatabase, ref, set, update } from "firebase/database";
 let runningMode = "IMAGE";
 let faceLandmarker;
 let poseLandmarker;
+let handLandmarker;
+
+/* SECTION: Performance Monitoring */
+const stats = new Stats();
+stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom);
 
 /* SECTION: INITIALIZE DETECTOR */
 
@@ -41,6 +51,7 @@ async function initializePoseLandmarker() {
 	poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
 		baseOptions: {
 			modelAssetPath: poseLandmarkerModelPath,
+			delegate: "GPU",
 		},
 		runningMode: runningMode,
 	});
@@ -157,14 +168,16 @@ if (hasGetUserMedia()) {
 
 // let displayContainer = document.getElementById("video-detections-container");
 const landmarksCanvas = document.querySelector("#landmarks-canvas");
+const handLandmarksCanvas = document.querySelector("#hand-landmarks-canvas");
 
 async function enableCamForLandmarker(event) {
 	// Hide button
 	enableWebcamButton.style.display = "none";
 
-	// Set parameters for getUsermedia
+	// Set parameters for getUsermedia with mirrored video
 	const constraints = {
 		video: true,
+		// video: { facingMode: "user" },
 	};
 
 	// Activate the webcam stream.
@@ -172,6 +185,7 @@ async function enableCamForLandmarker(event) {
 		.getUserMedia(constraints)
 		.then(function (stream) {
 			video.srcObject = stream;
+			// video.style.transform = "scaleX(-1)"; // Mirror the video feed
 			video.addEventListener("loadeddata", detectLandmarksInWebcam);
 		})
 		.catch((err) => {
@@ -200,16 +214,21 @@ function makeVideoFullScreen() {
 	liveView.style.display = "block";
 }
 
+let poseDetections = {};
+
 async function detectLandmarksInWebcam() {
 	// if image mode is initialized, create a new classifier with video runningMode
 	if (runningMode === "IMAGE") {
 		runningMode = "VIDEO";
 		await faceLandmarker.setOptions({ runningMode: "VIDEO" });
 		await poseLandmarker.setOptions({ runningMode: "VIDEO" });
+		// await handLandmarker.setOptions({ runningMode: "VIDEO" });
 
 		/* Canvas size = Actual image size, to match resolution */
 		landmarksCanvas.setAttribute("width", video.videoWidth + "px");
 		landmarksCanvas.setAttribute("height", video.videoHeight + "px");
+		handLandmarksCanvas.setAttribute("width", video.videoWidth + "px");
+		handLandmarksCanvas.setAttribute("height", video.videoHeight + "px");
 
 		makeVideoFullScreen();
 	}
@@ -220,33 +239,56 @@ async function detectLandmarksInWebcam() {
 		lastVideoTime = video.currentTime;
 
 		const detections = faceLandmarker.detectForVideo(video, startTimeMs);
-		// const poseDetections = poseLandmarker.detectForVideo(video, startTimeMs);
-		const poseDetections = {};
+		// const handDetections = handLandmarker.detectForVideo(video, startTimeMs);
+		const poseDetections = poseLandmarker.detectForVideo(video, startTimeMs);
+		// const poseDetections = {};
+		// detectHandLandmarks(startTimeMs);
 
 		// Save data for collection
 		if (document.getElementById("collect-data").checked) {
 			detectionData[Date.now()] = detections;
 		}
 
-		const ctx = landmarksCanvas.getContext("2d");
-		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); //clear canvas before redrawing
-
 		if (detections.faceLandmarks) {
 			/* Update avatar */
-			if (document.getElementById("show-avatar").checked) {
-				updatePosition(detections.faceLandmarks);
-			}
+			// if (document.getElementById("show-avatar").checked) {
+			updatePosition(detections.faceLandmarks, {});
+			// }
+
 			/* Render detection */
-			drawFaceLandmarksOnCanvas(detections.faceLandmarks, ctx);
+			// const ctx = landmarksCanvas.getContext("2d");
+			// ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); //clear canvas before redrawing
+			// drawFaceLandmarksOnCanvas(detections.faceLandmarks, ctx);
 		}
 
+		// if (handDetections.landmarks) {
+		// 	const ctx2 = handLandmarksCanvas.getContext("2d");
+		// 	ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height); //clear canvas before redrawing
+		// 	drawHandLandmarksOnCanvas(handDetections.landmarks, ctx2);
+		// }
+
 		if (poseDetections.landmarks) {
-			drawPoseDetectionsOnCanvas(poseDetections, ctx);
+			const ctx2 = handLandmarksCanvas.getContext("2d");
+			ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height); //clear canvas before redrawing
+			drawPoseDetectionsOnCanvas(poseDetections, ctx2);
 		}
 	}
 
+	stats.update();
+
 	// Call this function again to keep predicting when the browser is ready
 	window.requestAnimationFrame(detectLandmarksInWebcam);
+}
+
+async function detectHandLandmarks(startTimeMs) {
+	poseDetections = poseLandmarker.detectForVideo(video, startTimeMs);
+}
+
+function drawHandLandmarksOnCanvas(handLandmarks, canvasContext) {
+	const drawingUtils = new DrawingUtils(canvasContext);
+	for (const landmarks of handLandmarks) {
+		drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS);
+	}
 }
 
 function drawFaceLandmarksOnCanvas(faceLandmarks, canvasContext) {
@@ -348,3 +390,28 @@ function sendData() {
 }
 
 sendData();
+
+var w;
+
+function startWorker() {
+	if (typeof Worker !== "undefined") {
+		if (typeof w == "undefined") {
+			w = new Worker("demo-worker.js");
+		}
+		w.onmessage = function (event) {
+			// document.getElementById("result").innerHTML = event.data;
+			console.log(event.data);
+		};
+	} else {
+		// document.getElementById("result").innerHTML =
+		// 	"Sorry! No Web Worker support.";
+		console.log("No Web Worker support.");
+	}
+}
+
+function stopWorker() {
+	w.terminate();
+	w = undefined;
+}
+
+// startWorker();

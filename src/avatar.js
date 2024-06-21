@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 /* SECTION: Performance Monitoring */
 // const stats = new Stats();
@@ -58,7 +59,7 @@ const resizeObserver = new ResizeObserver((event) => {
 resizeObserver.observe(document.getElementById("liveView"));
 
 /* SECTION: Scene Objects */
-const geometry = new THREE.BoxGeometry(1, 1, 1);
+const geometry = new THREE.BoxGeometry(1, 1, 0.5);
 const material = new THREE.MeshPhongMaterial({
 	color: 0xff0000,
 });
@@ -66,6 +67,14 @@ const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
 // const plane = new THREE.Mesh(geometry, material);
 // scene.add(plane);
+
+const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+const sphereMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+const sphereLeft = new THREE.Mesh(sphereGeometry, sphereMaterial);
+// scene.add(sphereLeft);
+
+const sphereRight = new THREE.Mesh(sphereGeometry, sphereMaterial);
+// scene.add(sphereRight);
 
 const circleGeometry = new THREE.CircleGeometry(1, 12);
 const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -110,6 +119,17 @@ const pointB = new THREE.Vector3(0, 0, 0);
 // // Add the line to the scene
 // scene.add(line);
 
+// Instantiate a loader
+const loader = new GLTFLoader();
+let faceMask;
+
+loader.load("./assets/face-mask/scene.gltf", (gltf) => {
+	faceMask = gltf.scene;
+	// scene.add(faceMask);
+	// faceMask.scale.multiplyScalar(1 / 10);
+	faceMask.position.set(0, 0, 0);
+});
+
 /* SECTION: Utility Functions */
 
 const getVisibleHeightAtZDepth = (depth, camera) => {
@@ -137,30 +157,29 @@ function animate() {
 	// requestAnimationFrame(animate);
 }
 
-
-export function updatePosition(landmarks) {
+export function updatePosition(faceLandmarks, handLandmarks) {
 	let visibleHeight = getVisibleHeightAtZDepth(0, camera);
 	let visibleWidth = getVisibleWidthAtZDepth(0, camera);
 
-	if (landmarks[0]) {
-		let leftEyePosition = landmarks[0][468];
-		let rightEyePosition = landmarks[0][473];
+	if (faceLandmarks[0]) {
+		let leftEyePosition = faceLandmarks[0][468];
+		let rightEyePosition = faceLandmarks[0][473];
 
-		let newPointA = landmarks[0][10];
-		let newPointB = landmarks[0][152];
+		let newPointA = faceLandmarks[0][10];
+		let newPointB = faceLandmarks[0][152];
 
-		let centerPoint = landmarks[0][5];
+		let centerPoint = faceLandmarks[0][5];
 		let lengthY = 0;
 
 		let leftTragion = new THREE.Vector3(
-			landmarks[0][127].x * visibleWidth - visibleWidth / 2,
-			-landmarks[0][127].y * visibleHeight + visibleHeight / 2,
+			faceLandmarks[0][127].x * visibleWidth - visibleWidth / 2,
+			-faceLandmarks[0][127].y * visibleHeight + visibleHeight / 2,
 			0
 		);
 
 		let rightTragion = new THREE.Vector3(
-			landmarks[0][356].x * visibleWidth - visibleWidth / 2,
-			-landmarks[0][356].y * visibleHeight + visibleHeight / 2,
+			faceLandmarks[0][356].x * visibleWidth - visibleWidth / 2,
+			-faceLandmarks[0][356].y * visibleHeight + visibleHeight / 2,
 			0
 		);
 
@@ -201,7 +220,6 @@ export function updatePosition(landmarks) {
 			cube.rotation.z = rotationAngle;
 		}
 
-
 		lengthY = Math.abs(
 			-newPointA.y * visibleHeight +
 				visibleHeight / 2 -
@@ -209,8 +227,23 @@ export function updatePosition(landmarks) {
 		);
 		cube.scale.y = lineLength;
 		cube.scale.x = horizontalLength;
+		// faceMask.scale.multiplyScalar(1 / 15);
 		cube.position.x = centerPoint.x * visibleWidth - visibleWidth / 2;
 		cube.position.y = -centerPoint.y * visibleHeight + visibleHeight / 2;
+
+		// if (handLandmarks.landmarks && handLandmarks.landmarks[0]) {
+		// 	sphereLeft.position.x =
+		// 		handLandmarks.landmarks[0][5].x * visibleWidth - visibleWidth / 2;
+		// 	sphereLeft.position.y =
+		// 		-handLandmarks.landmarks[0][5].y * visibleHeight + visibleHeight / 2;
+		// }
+
+		// if (handLandmarks.landmarks && handLandmarks.landmarks[1]) {
+		// 	sphereRight.position.x =
+		// 		handLandmarks.landmarks[1][5].x * visibleWidth - visibleWidth / 2;
+		// 	sphereRight.position.y =
+		// 		-handLandmarks.landmarks[1][5].y * visibleHeight + visibleHeight / 2;
+		// }
 
 		// line.geometry.setFromPoints([pointA, pointB]);
 		// line.geometry.attributes.position.needsUpdate = true;
@@ -223,7 +256,6 @@ function logCoordinates(pointC, rotationAngle) {
 	console.log("Point C X:", pointC.x, "Point C Y:", pointC.y);
 	setTimeout(logCoordinates, 1000);
 }
-
 
 // function sendData() {
 // 	if (document.getElementById("collect-data").checked) {
